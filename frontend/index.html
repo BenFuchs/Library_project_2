@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent form from submitting the default way
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            axios.post('http://127.0.0.1:5000/login', {
+                Email: email,
+                Password: password
+            })
+            .then(response => {
+                console.log('Login successful:', response.data);
+                alert('Login successful');
+                // Store the access token and redirect to another page if needed
+                localStorage.setItem('acc_token', response.data.acc_token);
+                // window.location.href = 'another_page.html'; // Uncomment to redirect
+                 window.location.href = 'delBook.html'
+            
+            })
+            .catch(error => {
+                console.error('Error logging in:', error);
+                alert('Login failed: ' + error.response.data.message);
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="login-form" onsubmit="handleLogin(event)">
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email" required>
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
