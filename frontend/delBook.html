@@ -9,38 +9,35 @@
     <script>
         const SERVER = 'http://127.0.0.1:5000/'
         document.addEventListener('DOMContentLoaded', function () {
-    axios.get(SERVER + 'showBook')
-        .then(response => {
-            console.log('Books fetched:', response.data); // Debug output
-            const bookContainer = document.getElementById('book-container');
-            bookContainer.innerHTML = ''; // Clear container in case of reload
+            axios.get(SERVER + 'showBook')
+                .then(response => {
+                    console.log('Books fetched:', response.data); // Debug output
+                    const bookContainer = document.getElementById('book-container');
+                    bookContainer.innerHTML = ''; // Clear container in case of reload
 
-            response.data.forEach(book => {
-                const bookDiv = document.createElement('div');
-                bookDiv.className = 'book-item';
+                    response.data.forEach(book => {
+                        const bookDiv = document.createElement('div');
+                        bookDiv.className = 'book-item';
 
-                const bookInfo = document.createElement('p');
-                bookInfo.innerText = `Name: ${book.bookName}, Author: ${book.bookAuthor}, Published: ${book.bookPublished}`;
-                bookDiv.appendChild(bookInfo);
+                        const bookInfo = document.createElement('p');
+                        bookInfo.innerText = `Name: ${book.bookName}, Author: ${book.bookAuthor}, Published: ${book.bookPublished}`;
+                        bookDiv.appendChild(bookInfo);
 
-                const deleteButton = document.createElement('button');
-                deleteButton.innerText = 'DELETE';
-                deleteButton.onclick = () => handleDelete(book.id);
-                bookDiv.appendChild(deleteButton);
+                        const deleteButton = document.createElement('button');
+                        deleteButton.innerText = 'DELETE';
+                        deleteButton.onclick = () => handleDelete(book.id);
+                        bookDiv.appendChild(deleteButton);
 
-                const loanButton = document.createElement('button');
-                loanButton.innerText = 'LOAN';
-                loanButton.onclick = () => handleLoan(book.id);
-                bookDiv.appendChild(loanButton);
+                        const loanButton = document.createElement('button');
+                        loanButton.innerText = 'LOAN';
+                        loanButton.onclick = () => handleLoan(book.id);
+                        bookDiv.appendChild(loanButton);
 
-                bookContainer.appendChild(bookDiv);
-            });
-        })
-        .catch(error => console.error('Error fetching books:', error));
-});
-
-        
-
+                        bookContainer.appendChild(bookDiv);
+                    });
+                })
+                .catch(error => console.error('Error fetching books:', error));
+        });
 
         function handleDelete(bookID) {
             console.log('Delete book:', bookID);
@@ -59,20 +56,32 @@
                 .then(response => {
                     console.log('Book deleted:', response.data);
                     // Optionally, refresh the book list or remove the deleted book from the DOM
+                    document.getElementById('book-container').innerHTML = '';
+                    document.dispatchEvent(new Event('DOMContentLoaded')); // Reload the book list
                 })
                 .catch(error => console.error('Error deleting book:', error));
+        }
 
         function handleLoan(bookID) {
-                console.log('Loan book:', bookID);
-                // Add your LOAN request logic here, for example:
-                axios.post(SERVER + `loanBook`, { id: bookID })
-                    .then(response => {
-                        console.log('Book loaned:', response.data);
-                        // Optionally, update the book status in the DOM
-                    })
-                    .catch(error => console.error('Error loaning book:', error));
+            console.log('Loan book:', bookID);
+            const token = localStorage.getItem('acc_token');
+            if (!token) {
+                console.error('Access token not found');
+                return;
             }
+
+            axios.post(SERVER + `loanBook/${bookID}`, {}, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    console.log('Book loaned:', response.data);
+                    // Optionally, update the book status in the DOM
+                })
+                .catch(error => console.error('Error loaning book:', error));
         }
+
     </script>
 </head>
 
