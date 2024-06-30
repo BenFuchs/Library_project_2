@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, joinedload
 from sqlalchemy import Integer, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
@@ -51,24 +51,24 @@ class Loans(db.Model):
 
 # ADD ADMIN ROUTE, ADMIN ADDED SO ROUTE IS LEFT OUT OF THE APP
 
-# @api.route('/registerAdmin', methods=['POST'])
-# def registerAdmin():
-#     data = request.get_json()
-#     if not data or not data.get('Email') or not data.get('Password'):
-#         return jsonify({"msg": "Missing email or password"}), 400
+@api.route('/registerAdmin', methods=['POST'])
+def registerAdmin():
+    data = request.get_json()
+    if not data or not data.get('Email') or not data.get('Password'):
+        return jsonify({"msg": "Missing email or password"}), 400
 
-#     Email = data['Email']
-#     password= data['Password']
+    Email = data['Email']
+    password= data['Password']
 
-#     if Admin.query.filter_by(Email=Email).first() is not None:
-#         return jsonify({"msg": "User already exists"}), 409
+    if Admin.query.filter_by(Email=Email).first() is not None:
+        return jsonify({"msg": "User already exists"}), 409
 
-#     pwd_hash = generate_password_hash(password)
-#     new_Admin = Admin(Email=Email, Password=pwd_hash, Active=True)
-#     db.session.add(new_Admin)
-#     db.session.commit()
+    pwd_hash = generate_password_hash(password)
+    new_Admin = Admin(Email=Email, Password=pwd_hash, Active=True)
+    db.session.add(new_Admin)
+    db.session.commit()
 
-#     return jsonify({"msg": "User registered successfully"}), 201
+    return jsonify({"msg": "User registered successfully"}), 201
 
 @api.route('/register', methods=['POST'])
 def register():
@@ -141,10 +141,21 @@ def show_books():
     return jsonify(books)
 
 @api.route('/showUser', methods=['GET'])
+@jwt_required()
 def show_users():
-    user_list = db.session.execute(db.select(Users)).scalars().all()
-    users = [{"Email": user.Email, "Password": user.Password} for user in user_list]
-    return jsonify(users)
+    logged_user = get_jwt_identity()
+    admin_emails = [admin.Email for admin in Admin.query.all()]
+    if logged_user in admin_emails:
+        user_list = db.session.query(Users).options(joinedload(Users.loans)).all()
+        users = [{
+            "Email": user.Email,
+            "Loans": [{"LoanID": loan.id} for loan in user.loans]
+        } for user in user_list]
+        return jsonify(users)
+    else:
+        return jsonify({"message": "Unauthorized"}), 401
+
+        
 
 @api.route('/delBook/<int:book_id>', methods=['DELETE'])
 @jwt_required()
@@ -163,29 +174,29 @@ def del_book(book_id):
 @jwt_required()
 def loan_book(book_id):
     logged_user = get_jwt_identity()
-
-    # Fetch user based on logged-in email, assuming it's a regular user
     user = Users.query.filter_by(Email=logged_user).first()
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
     book = Books.query.filter_by(id=book_id).first()
-    
     if not book:
         return jsonify({"msg": "Book not found"}), 404
-    
-    if book.Active == 0:
-        return jsonify({"msg": "book is currently loaned"})
-        
 
-    # Create loan data
-    loan_data = Loans(UserID=user.id, BookID=book.id, Active=True)
-    book.Active = 0
-    db.session.add(loan_data)
+    if not book.Active:
+        return jsonify({"msg": "Book already loaned"}), 400
+
+    loan = Loans.query.filter_by(BookID=book_id, UserID=user.id).first()
+    if loan:
+        loan.Active = True
+    else:
+        loan = Loans(UserID=user.id, BookID=book_id, Active=True)
+        db.session.add(loan)
+
+    book.Active = False
     db.session.commit()
+    return jsonify({"msg": "Book loaned"}), 200
 
-    return "Loan added successfully", 200
 
 @api.route('/updateBook/<int:book_id>', methods=['POST'])
 @jwt_required()
@@ -212,22 +223,29 @@ def update_book(book_id):
 @api.route('/returnBook/<int:book_id>', methods=['POST'])
 @jwt_required()
 def return_book(book_id):
-    logged_user =  get_jwt_identity()
+    logged_user = get_jwt_identity()
     user = Users.query.filter_by(Email=logged_user).first()
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
-    
-    loaned_book = Loans.query.filter_by(id=book_id).first()
-    if not loaned_book:
-        return jsonify({"msg": "Loaned book not found"}), 404
-    
+    print(book_id, user.id)
+    loan = Loans.query.filter_by(BookID=book_id, UserID=user.id, Active=True).first()
+    if not loan:
+        return jsonify({"msg": "Loaned book not found or already returned"}), 404
+
     book = Books.query.filter_by(id=book_id).first()
-    print(book.id, loaned_book.id)
-    book.Active = 1
-    loaned_book.Active = 0
-    db.session.commit()
-    return jsonify({"msg": "book returned"})
+    if not book:
+        return jsonify({"msg": "Book not found"}), 404
+
+    try:
+        book.Active = True
+        loan.Active = False
+        db.session.commit()
+        return jsonify({"msg": "Book returned"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "An error occurred while returning the book", "error": str(e)}), 500
+
 
 
 @api.route('/deleteUser/<int:user_id>', methods=['POST'])
@@ -264,6 +282,34 @@ def upd_user(user_id):
         return jsonify({"msg": "User info has been updated"}), 200
     else:
         return jsonify({"msg": "Unauthorized or user not found"}), 403
+
+@api.route('/showUserLoans', methods=['GET'])
+@jwt_required()
+def show_user_loans():
+    logged_user = get_jwt_identity()
+    user = Users.query.filter_by(Email=logged_user).first()
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    
+    loans = Loans.query.filter_by(UserID=user.id, Active=True).all()
+    loaned_books = []
+
+    for loan in loans:
+        book = Books.query.get(loan.BookID)
+        loaned_books.append({
+            "LoanID": loan.id,
+            "BookID": book.id,
+            "Title": book.bookName
+        })
+    
+    response = {
+        "Email": user.Email,
+        "Loans": loaned_books
+    }
+
+    return jsonify(response), 200
+
 
 
 

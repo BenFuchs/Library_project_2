@@ -70,7 +70,7 @@
                 return;
             }
 
-            axios.post(SERVER + `loanBook/${bookID}`, {}, {
+            axios.post(SERVER + `/loanBook/${bookID}`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -88,6 +88,8 @@
 <body>
     <h1>Book List</h1>
     <div id="book-container"></div>
+    <br>
+    <a href="client_userPage.html">USER PAGE</a>
 </body>
 
 </html>

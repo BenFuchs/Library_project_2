@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Users</title>
+    <style>
+        table {
+            width: 50%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Users List</h1>
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Loans</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Users will be appended here by JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        const SERVER = 'http://127.0.0.1:5000/'
+        document.addEventListener("DOMContentLoaded", function() {
+    const token = localStorage.getItem('acc_token');
+
+    if (!token) {
+        console.error('JWT token is missing');
+        return;
+    }
+
+    const headers = new Headers({
+        'Authorization': `Bearer ${token}`
+    });
+
+    fetch(SERVER + '/showUserLoans', { headers })
+        .then(response => {
+            if (response.status === 401) {
+                throw new Error('Unauthorized');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.Loans) {
+                const tableBody = document.querySelector('#usersTable tbody');
+                const row = document.createElement('tr');
+                const emailCell = document.createElement('td');
+                emailCell.textContent = data.Email;
+                const loansCell = document.createElement('td');
+                if (data.Loans.length > 0) {
+                    const loansList = document.createElement('ul');
+                    data.Loans.forEach(loan => {
+                        const loanItem = document.createElement('li');
+                        loanItem.textContent = `Title: ${loan.Title} `;
+                        const returnButton = document.createElement('button');
+                        returnButton.textContent = 'Return';
+                        returnButton.addEventListener('click', () => {
+                            fetch(SERVER + `/returnBook/${loan.LoanID}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(returnData => {
+                                console.log(returnData.msg);
+                                if (returnData.msg === 'Book returned') {
+                                    loanItem.textContent += ' (returned)';
+                                    returnButton.disabled = true;
+                                }
+                            })
+                            .catch(error => console.error('Error returning book:', error));
+                        });
+                        loanItem.appendChild(returnButton);
+                        loansList.appendChild(loanItem);
+                    });
+                    loansCell.appendChild(loansList);
+                } else {
+                    loansCell.textContent = "No loans";
+                }
+                row.appendChild(emailCell);
+                row.appendChild(loansCell);
+                tableBody.appendChild(row);
+            } else {
+                console.error('Unexpected data format:', data);
+            }
+        })
+        .catch(error => console.error('Error fetching users:', error));
+});
+
+
+    </script>
+</body>
+</html>
