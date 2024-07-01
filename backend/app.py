@@ -188,14 +188,15 @@ def loan_book(book_id):
 
     loan = Loans.query.filter_by(BookID=book_id, UserID=user.id).first()
     if loan:
-        loan.Active = 1
+        loan.Active = True
     else:
         loan = Loans(UserID=user.id, BookID=book_id, Active=True)
         db.session.add(loan)
 
-    book.Active = 0
+    book.Active = False
     db.session.commit()
     return jsonify({"msg": "Book loaned"}), 200
+
 
 
 @api.route('/updateBook/<int:book_id>', methods=['POST'])
@@ -229,7 +230,7 @@ def return_book(book_id):
     if not user:
         return jsonify({"msg": "User not found"}), 404
 
-    print(f"Returning book for UserID: {user.id}, BookID: {book_id}")
+    print(f"Attempting to return BookID: {book_id} for UserID: {user.id}")
 
     loan = Loans.query.filter_by(BookID=book_id, UserID=user.id, Active=True).first()
     if not loan:
