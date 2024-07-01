@@ -188,12 +188,12 @@ def loan_book(book_id):
 
     loan = Loans.query.filter_by(BookID=book_id, UserID=user.id).first()
     if loan:
-        loan.Active = True
+        loan.Active = 1
     else:
         loan = Loans(UserID=user.id, BookID=book_id, Active=True)
         db.session.add(loan)
 
-    book.Active = False
+    book.Active = 0
     db.session.commit()
     return jsonify({"msg": "Book loaned"}), 200
 
@@ -228,22 +228,30 @@ def return_book(book_id):
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
-    print(book_id, user.id)
+
+    print(f"Returning book for UserID: {user.id}, BookID: {book_id}")
+
     loan = Loans.query.filter_by(BookID=book_id, UserID=user.id, Active=True).first()
     if not loan:
+        print("Loaned book not found or already returned")
         return jsonify({"msg": "Loaned book not found or already returned"}), 404
 
     book = Books.query.filter_by(id=book_id).first()
     if not book:
+        print("Book not found")
         return jsonify({"msg": "Book not found"}), 404
+
+    print(f"Book ID: {book.id}, Loan ID: {loan.id}")
 
     try:
         book.Active = True
         loan.Active = False
         db.session.commit()
+        print("Book returned successfully")
         return jsonify({"msg": "Book returned"}), 200
     except Exception as e:
         db.session.rollback()
+        print(f"An error occurred while returning the book: {str(e)}")
         return jsonify({"msg": "An error occurred while returning the book", "error": str(e)}), 500
 
 
