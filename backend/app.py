@@ -32,13 +32,9 @@ class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     Email = db.Column(db.String, unique=True)
     Password = db.Column(db.String)
+    Role = db.Column(db.String)
     Active = db.Column(db.Boolean)
 
-class Admin(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    Email = db.Column(db.String, unique=True)
-    Password = db.Column(db.String)
-    Active = db.Column(db.Boolean)
 
 class Loans(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -60,11 +56,11 @@ def registerAdmin():
     Email = data['Email']
     password= data['Password']
 
-    if Admin.query.filter_by(Email=Email).first() is not None:
+    if Users.query.filter_by(Email=Email).first() is not None:
         return jsonify({"msg": "User already exists"}), 409
 
     pwd_hash = generate_password_hash(password)
-    new_Admin = Admin(Email=Email, Password=pwd_hash, Active=True)
+    new_Admin = Users(Email=Email, Password=pwd_hash, Active=True, Role="Admin")
     db.session.add(new_Admin)
     db.session.commit()
 
@@ -83,7 +79,7 @@ def register():
         return jsonify({"msg": "User already exists"}), 409
 
     pwd_hash = generate_password_hash(password)
-    new_user = Users(Email=Email, Password=pwd_hash, Active=True)
+    new_user = Users(Email=Email, Password=pwd_hash, Active=True, Role="client")
     db.session.add(new_user)
     db.session.commit()
 
@@ -95,7 +91,7 @@ def login():
     Email = data['Email']
     password = data['Password']
 
-    user = Users.query.filter_by(Email=Email).first() or Admin.query.filter_by(Email=Email).first()
+    user = Users.query.filter_by(Email=Email).first() or Users.query.filter_by(Role="Admin", Email=Email).first()
     
     if not user:
         return jsonify({
@@ -118,8 +114,9 @@ def login():
 @jwt_required()
 def add_book():
     logged_user = get_jwt_identity()
-    admin_emails = [admin.Email for admin in db.session.execute(db.select(Admin)).scalars().all()]
-    if logged_user in admin_emails:
+    print(logged_user)
+    admin = Users.query.filter_by(Role='Admin').first()
+    if logged_user == admin.Email:
         print(logged_user)
         data = request.get_json()
         bookName = data['bookName']
@@ -144,8 +141,8 @@ def show_books():
 @jwt_required()
 def show_users():
     logged_user = get_jwt_identity()
-    admin_emails = [admin.Email for admin in Admin.query.all()]
-    if logged_user in admin_emails:
+    admin_emails = Users.query.filter_by(Role='Admin').first()
+    if logged_user == admin_emails.Email:
         user_list = db.session.query(Users).options(joinedload(Users.loans)).all()
         users = [{
             "Email": user.Email,
@@ -161,8 +158,8 @@ def show_users():
 @jwt_required()
 def del_book(book_id):
     logged_user = get_jwt_identity()
-    admin_emails = [admin.Email for admin in db.session.execute(db.select(Admin)).scalars().all()]
-    if logged_user in admin_emails:
+    admin_emails = Users.query.filter_by(Role='Admin').first()
+    if logged_user == admin_emails.Email:
         book = db.session.execute(db.select(Books).filter_by(id=book_id)).scalars().first()
         if book:
             print(book_id)
@@ -202,8 +199,8 @@ def loan_book(book_id):
 @jwt_required()
 def update_book(book_id):
     logged_user= get_jwt_identity()
-    admin_emails = [admin.Email for admin in db.session.execute(db.select(Admin)).scalars().all()]
-    if logged_user in admin_emails:
+    admin_emails = Users.query.filter_by(Role='Admin').first()
+    if logged_user == admin_emails.Email:
         book = db.session.execute(db.select(Books).filter_by(id=book_id)).scalars().first()
         if book:
             data = request.get_json()
@@ -252,8 +249,8 @@ def return_book(book_id):
 @jwt_required()
 def del_user(user_id):
     logged_user= get_jwt_identity()
-    admin_emails = [admin.Email for admin in db.session.execute(db.select(Admin)).scalars().all()]
-    if logged_user in admin_emails:
+    admin_emails = Users.query.filter_by(Role='Admin').first()
+    if logged_user == admin_emails.Email:
         user = db.session.execute(db.select(Users).filter_by(id=user_id)).scalars().first()
         if user:
             print(user_id)
