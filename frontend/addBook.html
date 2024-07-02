@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Book</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const SERVER = 'http://127.0.0.1:5000/';
+        function addBook() {
+            event.preventDefault();  // Prevent the default form submission
+            const token = localStorage.getItem('acc_token');
+            if (!token) {
+                console.error('Access token not found');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('bookName', document.getElementById('bookName').value);
+            formData.append('bookAuthor', document.getElementById('bookAuthor').value);
+            formData.append('bookPublished', document.getElementById('bookPublished').value);
+            formData.append('bookImage', document.getElementById('bookImage').files[0]);
+
+            axios.post(SERVER + 'addBook', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    console.log('Book added:', response.data);
+                    // Optionally, handle the response (e.g., show a success message)
+                })
+                .catch(error => console.error('Error adding book:', error));
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Add Book</h1>
+    <form id="addBookForm" onsubmit="addBook(event);">
+        <label for="bookName">Book Name:</label>
+        <input type="text" id="bookName" name="bookName" required><br>
+        <label for="bookAuthor">Book Author:</label>
+        <input type="text" id="bookAuthor" name="bookAuthor" required><br>
+        <label for="bookPublished">Book Published:</label>
+        <input type="date" id="bookPublished" name="bookPublished" required><br>
+        <label for="bookImage">Book Image:</label>
+        <input type="file" id="bookImage" name="bookImage" accept="image/*" required><br>
+        <button type="submit">Add Book</button>
+    </form>
+</body>
+
+</html>

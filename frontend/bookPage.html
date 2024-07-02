@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book List</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        const SERVER = 'http://127.0.0.1:5000/'
+        const SERVER = 'http://127.0.0.1:5000/';
         document.addEventListener('DOMContentLoaded', function () {
-            axios.get(SERVER + 'showBook')
+            axios.get('http://127.0.0.1:5000/showBook')
                 .then(response => {
                     console.log('Books fetched:', response.data); // Debug output
                     const bookContainer = document.getElementById('book-container');
@@ -22,6 +21,15 @@
                         const bookInfo = document.createElement('p');
                         bookInfo.innerText = `Name: ${book.bookName}, Author: ${book.bookAuthor}, Published: ${book.bookPublished}`;
                         bookDiv.appendChild(bookInfo);
+
+                        // Display book image if available
+                        if (book.book_image_path) {
+                            const bookImage = document.createElement('img');
+                            bookImage.src =  'http://127.0.0.1:5000/' + book.book_image_path;  // Adjust path to match backend route
+                            bookImage.alt = `Image of ${book.bookName}`;
+                            bookImage.style.maxWidth = '100px';
+                            bookDiv.appendChild(bookImage);
+                        }
 
                         const deleteButton = document.createElement('button');
                         deleteButton.innerText = 'DELETE';
@@ -81,15 +89,13 @@
                 })
                 .catch(error => console.error('Error loaning book:', error));
         }
-
     </script>
 </head>
-
 <body>
     <h1>Book List</h1>
     <div id="book-container"></div>
     <br>
     <a href="client_userPage.html">USER PAGE</a>
+    <a href="addBook.html">ADD BOOK</a>
 </body>
-
 </html>

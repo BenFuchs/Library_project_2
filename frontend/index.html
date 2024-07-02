@@ -12,7 +12,7 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            axios.post('http://127.0.0.1:5000/login', {
+            axios.post('http://127.0.0.1:5000/', {
                 Email: email,
                 Password: password
             })
@@ -43,5 +43,7 @@
         <br>
         <button type="submit">Login</button>
     </form>
+    <br>
+    <a href="../frontend/register.html">Dont have an account? Sign up here!</a>
 </body>
 </html>

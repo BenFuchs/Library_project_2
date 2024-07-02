@@ -1,17 +1,23 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file, send_from_directory, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, joinedload
 from sqlalchemy import Integer, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
+import os
+from werkzeug.utils import secure_filename
 
-api = Flask(__name__)
+api = Flask(__name__, static_folder='media')
 CORS(api)
 api.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///library.db"
 api.config['SECRET_KEY'] = 'your_secret_key_here'
 api.config['JWT_SECRET_KEY'] = 'jwt_secret_key_here'
+
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'media')
+api.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 class Base(DeclarativeBase):
   pass
@@ -26,6 +32,7 @@ class Books(db.Model):
     bookName = db.Column(db.String, unique=True)
     bookAuthor = db.Column(db.String)
     bookPublished = db.Column(db.Integer)
+    book_image_path = db.Column(db.String)
     Active = db.Column(db.Boolean)
 
 class Users(db.Model):
@@ -85,57 +92,104 @@ def register():
 
     return jsonify({"msg": "User registered successfully"}), 201
 
-@api.route('/login', methods=['POST'])
+@api.route('/', methods=['POST', 'GET'])
 def login():
-    data = request.get_json()
-    Email = data['Email']
-    password = data['Password']
+    if request.method == 'POST':
+        data = request.get_json()
+        Email = data['Email']
+        password = data['Password']
 
-    user = Users.query.filter_by(Email=Email).first() or Users.query.filter_by(Role="Admin", Email=Email).first()
-    
-    if not user:
-        return jsonify({
-            'message': 'User not found'
-        }), 401
+        user = Users.query.filter_by(Email=Email).first() or Users.query.filter_by(Role="Admin", Email=Email).first()
+        
+        if not user:
+            return jsonify({
+                'message': 'User not found'
+            }), 401
 
-    if user.Active == 0:
-        return jsonify({"msg": "User has been set to inactive by admin"}), 403
+        if user.Active == 0:
+            return jsonify({"msg": "User has been set to inactive by admin"}), 403
 
-    if not check_password_hash(user.Password, password):
-        return jsonify({
-            'message': 'Wrong password'
-        }), 401
+        if not check_password_hash(user.Password, password):
+            return jsonify({
+                'message': 'Wrong password'
+            }), 401
 
-    acc_token = create_access_token(identity=Email)
-    return jsonify({'acc_token': acc_token}), 200
+        acc_token = create_access_token(identity=Email)
+        return jsonify({'acc_token': acc_token}), 200
+    return send_file('../frontend/index.html')
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@api.route('/media/<path:filename>')  # Endpoint to serve media files
+def media(filename):
+    return send_from_directory(api.config['UPLOAD_FOLDER'], filename)
 
 @api.route('/addBook', methods=['POST'])
 @jwt_required()
 def add_book():
     logged_user = get_jwt_identity()
-    print(logged_user)
     admin = Users.query.filter_by(Role='Admin').first()
+    
     if logged_user == admin.Email:
-        print(logged_user)
-        data = request.get_json()
-        bookName = data['bookName']
-        bookAuthor = data['bookAuthor']
-        bookPublished = data['bookPublished']
+        bookName = request.form['bookName']
+        bookAuthor = request.form['bookAuthor']
+        bookPublished = request.form['bookPublished']
+        
         if Books.query.filter_by(bookName=bookName).first() is not None:
             return jsonify({"msg": "Book name already exists"}), 409
-        new_book = Books(bookName=bookName, bookAuthor=bookAuthor, bookPublished=bookPublished, Active=True)
-        db.session.add(new_book)
-        db.session.commit()
-        return f'{bookName} successfully added'
+
+        file = request.files['bookImage']
+        if file.filename == '':
+            return jsonify({"msg": "No selected file"}), 400
+        
+        # Handle file upload
+        if 'bookImage' not in request.files:
+            return jsonify({"msg": "No file part"}), 400
+
+        if file:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(api.config['UPLOAD_FOLDER'], filename)
+            try:
+                file.save(file_path)
+
+                # Save the relative path to the database
+                relative_file_path = os.path.relpath(file_path, api.config['UPLOAD_FOLDER'])
+
+                new_book = Books(
+                    bookName=bookName,
+                    bookAuthor=bookAuthor,
+                    bookPublished=bookPublished,
+                    Active=True,
+                    book_image_path=relative_file_path  # Save the relative path in the database
+                )
+                db.session.add(new_book)
+                db.session.commit()
+
+                return jsonify({"msg": f'{bookName} successfully added'}), 201
+            except Exception as e:
+                return jsonify({"msg": f"File saving error: {str(e)}"}), 500
     else:
-        return jsonify({"msg":"User does not have authority for this action"})
+        return jsonify({"msg": "User does not have authority for this action"}), 403
+
 
 @api.route('/showBook', methods=['GET'])
-def show_books():
-    book_list = Books.query.filter(Books.Active == True).all()
-    books = [{"id": book.id, "bookName": book.bookName, "bookAuthor": book.bookAuthor, "bookPublished": book.bookPublished} for book in book_list]
-    return jsonify(books)
+def show_book():
+    books = Books.query.filter_by(Active=True).all()
+    book_list = []
+    for book in books:
+        book_data = {
+            'id': book.id,
+            'bookName': book.bookName,
+            'bookAuthor': book.bookAuthor,
+            'bookPublished': book.bookPublished,
+            'book_image_path': url_for('media', filename=book.book_image_path) if book.book_image_path else None
+        }
+        book_list.append(book_data)
+    return jsonify(book_list)
+
+
 
 @api.route('/showUser', methods=['GET'])
 @jwt_required()

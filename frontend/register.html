@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h2>Register</h2>
+    <form id="registerForm">
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email" required>
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <button type="submit">Register</button>
+    </form>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const SERVER ='http://127.0.0.1:5000'
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            axios.post(SERVER + '/register', {
+                Email: email,
+                Password: password
+            })
+            .then(function(response) {
+                alert(response.data.msg || 'Registration successful!');
+                window.location.href= 'index.html'
+            })
+            .catch(function(error) {
+                if (error.response) {
+                    alert(error.response.data.msg);
+                } else {
+                    console.error('Error:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
