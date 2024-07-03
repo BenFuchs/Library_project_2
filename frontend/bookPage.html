@@ -30,7 +30,7 @@
                     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
                     console.log('Token Payload:', tokenPayload);
 
-                    const userRole = tokenPayload.role;
+                    const userRole = tokenPayload.sub.role;
                     console.log('User Role:', userRole);
 
                     response.data.forEach(book => {

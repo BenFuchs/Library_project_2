@@ -117,7 +117,7 @@ def login():
                 'message': 'Wrong password'
             }), 401
 
-        acc_token = create_access_token(identity=user.Email, additional_claims={'role': user.Role})
+        acc_token = create_access_token(identity={'email': Email, 'role': user.Role})
         return jsonify({'acc_token': acc_token}), 200
     return send_file('../frontend/index.html')
 
@@ -132,11 +132,11 @@ def media(filename):
 @api.route('/addBook', methods=['POST'])
 @jwt_required()
 def add_book():
-    logged_user = get_jwt_identity()['email']
+    logged_user = get_jwt_identity()
+    user_role = logged_user['role']
     admin = Users.query.filter_by(Role='Admin').first()
-    # print(logged_user)
-    # print(admin)
-    if logged_user == admin.Email:
+   
+    if user_role == admin.Role:
         bookName = request.form['bookName']
         bookAuthor = request.form['bookAuthor']
         bookPublished = request.form['bookPublished']
@@ -201,8 +201,9 @@ def show_book():
 @jwt_required()
 def show_users():
     logged_user = get_jwt_identity()
-    admin_emails = Users.query.filter_by(Role='Admin').first()
-    if logged_user == admin_emails.Email:
+    user_role = logged_user['role']
+    admin = Users.query.filter_by(Role='Admin').first()
+    if user_role == admin.Role:
         user_list = db.session.query(Users).options(joinedload(Users.loans)).all()
         users = [{
             "Email": user.Email,
@@ -231,7 +232,8 @@ def del_book(book_id):
 @jwt_required()
 def loan_book(book_id):
     logged_user = get_jwt_identity()
-    user = Users.query.filter_by(Email=logged_user).first()
+    user_email = logged_user['email']
+    user = Users.query.filter_by(Email=user_email).first()
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -271,9 +273,10 @@ def loan_book(book_id):
 @api.route('/updateBook/<int:book_id>', methods=['POST'])
 @jwt_required()
 def update_book(book_id):
-    logged_user= get_jwt_identity()
-    admin_emails = Users.query.filter_by(Role='Admin').first()
-    if logged_user == admin_emails.Email:
+    logged_user = get_jwt_identity()
+    user_role = logged_user['role']
+    admin = Users.query.filter_by(Role='Admin').first()
+    if user_role == admin.Role:
         book = db.session.execute(db.select(Books).filter_by(id=book_id)).scalars().first()
         if book:
             data = request.get_json()
@@ -294,7 +297,8 @@ def update_book(book_id):
 @jwt_required()
 def return_book(book_id):
     logged_user = get_jwt_identity()
-    user = Users.query.filter_by(Email=logged_user).first()
+    user_email = logged_user['email']
+    user = Users.query.filter_by(Email=user_email).first()
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -330,20 +334,28 @@ def return_book(book_id):
 @jwt_required()
 def del_user(user_id):
     logged_user= get_jwt_identity()
-    admin_emails = Users.query.filter_by(Role='Admin').first()
-    if logged_user == admin_emails.Email:
-        user = db.session.execute(db.select(Users).filter_by(id=user_id)).scalars().first()
+    # print(logged_user)
+    user_role=logged_user['role']
+    print(user_role)
+    admin = Users.query.filter_by(Role='Admin').first()
+    print(admin.Role)
+    if user_role == admin.Role:
+        user = Users.query.filter_by(id=user_id).first()
+        print(user)
         if user:
             print(user_id)
             user.Active = 0
             db.session.commit()
+    else:
+        return "NOPE"
     return "user set to inactive"
 
 @api.route('/updateUser/<int:user_id>', methods=['POST'])
 @jwt_required()
 def upd_user(user_id):
     logged_user = get_jwt_identity()
-    user = Users.query.filter_by(Email=logged_user).first()
+    user_email= logged_user['email']
+    user = Users.query.filter_by(Email=user_email).first()
 
     if user and user.id == user_id:
         data = request.get_json()
@@ -365,7 +377,8 @@ def upd_user(user_id):
 @jwt_required()
 def show_user_loans():
     logged_user = get_jwt_identity()
-    user = Users.query.filter_by(Email=logged_user).first()
+    user_email= logged_user['email']
+    user = Users.query.filter_by(Email=user_email).first()
 
     if not user:
         return jsonify({"msg": "User not found"}), 404
