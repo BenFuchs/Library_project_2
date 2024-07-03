@@ -1,13 +1,13 @@
 from flask import Flask, jsonify, request, send_file, send_from_directory, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, joinedload
+from sqlalchemy.orm import DeclarativeBase, joinedload,Mapped, mapped_column
 from sqlalchemy import Integer, String, select
-from sqlalchemy.orm import Mapped, mapped_column
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import os
 from werkzeug.utils import secure_filename
+from datetime import datetime as dt, timedelta as td
 
 api = Flask(__name__, static_folder='media')
 CORS(api)
@@ -33,6 +33,7 @@ class Books(db.Model):
     bookAuthor = db.Column(db.String)
     bookPublished = db.Column(db.Integer)
     book_image_path = db.Column(db.String)
+    loanType = db.Column(db.Integer)
     Active = db.Column(db.Boolean)
 
 class Users(db.Model):
@@ -47,12 +48,14 @@ class Loans(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     UserID = db.Column(db.Integer, db.ForeignKey('users.id'))
     BookID = db.Column(db.Integer, db.ForeignKey('books.id'))
+    loanDate = db.Column(db.Integer)
+    returnDate = db.Column(db.Integer)
     Active = db.Column(db.Boolean)
 
     user = db.relationship('Users', backref='loans')
     book = db.relationship('Books', backref='loans')
 
-# ADD ADMIN ROUTE, ADMIN ADDED SO ROUTE IS LEFT OUT OF THE APP
+# ADD ADMIN ROUTE, NO HTML REQUIRED ADDING ADMINS WILL BE DONE THRU THE BACKEND
 
 @api.route('/registerAdmin', methods=['POST'])
 def registerAdmin():
@@ -72,7 +75,7 @@ def registerAdmin():
     db.session.commit()
 
     return jsonify({"msg": "User registered successfully"}), 201
-
+# REGISTER FOR CLIENTS, HTML ADDED
 @api.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -91,7 +94,7 @@ def register():
     db.session.commit()
 
     return jsonify({"msg": "User registered successfully"}), 201
-
+# LOGIN, HTML ADDED
 @api.route('/', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
@@ -114,7 +117,7 @@ def login():
                 'message': 'Wrong password'
             }), 401
 
-        acc_token = create_access_token(identity=Email)
+        acc_token = create_access_token(identity=user.Email, additional_claims={'role': user.Role})
         return jsonify({'acc_token': acc_token}), 200
     return send_file('../frontend/index.html')
 
@@ -125,17 +128,19 @@ def allowed_file(filename):
 @api.route('/media/<path:filename>')  # Endpoint to serve media files
 def media(filename):
     return send_from_directory(api.config['UPLOAD_FOLDER'], filename)
-
+# ADD BOOK, HTML ADDED
 @api.route('/addBook', methods=['POST'])
 @jwt_required()
 def add_book():
-    logged_user = get_jwt_identity()
+    logged_user = get_jwt_identity()['email']
     admin = Users.query.filter_by(Role='Admin').first()
-    
+    # print(logged_user)
+    # print(admin)
     if logged_user == admin.Email:
         bookName = request.form['bookName']
         bookAuthor = request.form['bookAuthor']
         bookPublished = request.form['bookPublished']
+        loanType = request.form['loanType']
         
         if Books.query.filter_by(bookName=bookName).first() is not None:
             return jsonify({"msg": "Book name already exists"}), 409
@@ -162,7 +167,8 @@ def add_book():
                     bookAuthor=bookAuthor,
                     bookPublished=bookPublished,
                     Active=True,
-                    book_image_path=relative_file_path  # Save the relative path in the database
+                    book_image_path=relative_file_path,  # Save the relative path in the database
+                    loanType = loanType
                 )
                 db.session.add(new_book)
                 db.session.commit()
@@ -173,7 +179,7 @@ def add_book():
     else:
         return jsonify({"msg": "User does not have authority for this action"}), 403
 
-
+#SHOW THE EXISTING BOOKS AVAILABLE, HTML ADDED
 @api.route('/showBook', methods=['GET'])
 def show_book():
     books = Books.query.filter_by(Active=True).all()
@@ -190,7 +196,7 @@ def show_book():
     return jsonify(book_list)
 
 
-
+# SHOWS THE USERS AND THEIR LOAN ID'S, NO HTML
 @api.route('/showUser', methods=['GET'])
 @jwt_required()
 def show_users():
@@ -241,7 +247,19 @@ def loan_book(book_id):
     if loan:
         loan.Active = True
     else:
-        loan = Loans(UserID=user.id, BookID=book_id, Active=True)
+        # the date which you loan the book
+        loanDate = dt.now()
+
+        # the max date which you can return the book based on the loan type: 1=2days/ 2=5days/ 3=7days
+        if book.loanType == 1:
+            returnDate = loanDate + td(days=2)
+        elif book.loanType == 2:
+            returnDate = loanDate + td(days=5)
+        elif book.loanType == 3:
+            returnDate = loanDate + td(days=7)
+        else:
+            return jsonify({"msg": "error, incorrect loantype input"})
+        loan = Loans(UserID=user.id, BookID=book_id, Active=True,loanDate=loanDate.strftime('%Y-%m-%d'), returnDate=returnDate.strftime('%Y-%m-%d'))
         db.session.add(loan)
 
     book.Active = False
@@ -356,12 +374,16 @@ def show_user_loans():
     loaned_books = []
 
     for loan in loans:
-        book = Books.query.get(loan.BookID)
-        loaned_books.append({
-            "LoanID": loan.id,
-            "BookID": book.id,
-            "Title": book.bookName
-        })
+        book = Books.query.filter_by(id=loan.BookID).first()
+        loan_data = {
+            'LoanID': loan.id,
+            'BookID': loan.BookID,
+            'Title': book.bookName,
+            'LoanDate': loan.loanDate,
+            'ReturnDate': loan.returnDate,
+            'ImagePath': book.book_image_path
+        }
+        loaned_books.append(loan_data)
     
     response = {
         "Email": user.Email,

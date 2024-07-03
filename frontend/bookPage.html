@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,11 +9,29 @@
     <script>
         const SERVER = 'http://127.0.0.1:5000/';
         document.addEventListener('DOMContentLoaded', function () {
-            axios.get('http://127.0.0.1:5000/showBook')
+            const token = localStorage.getItem('acc_token');
+
+            if (!token) {
+                console.error('JWT token is missing');
+                return;
+            }
+
+            axios.get(SERVER + 'showBook', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
                 .then(response => {
                     console.log('Books fetched:', response.data); // Debug output
                     const bookContainer = document.getElementById('book-container');
                     bookContainer.innerHTML = ''; // Clear container in case of reload
+
+                    // Get the user role from the token
+                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                    console.log('Token Payload:', tokenPayload);
+
+                    const userRole = tokenPayload.role;
+                    console.log('User Role:', userRole);
 
                     response.data.forEach(book => {
                         const bookDiv = document.createElement('div');
@@ -25,16 +44,19 @@
                         // Display book image if available
                         if (book.book_image_path) {
                             const bookImage = document.createElement('img');
-                            bookImage.src =  'http://127.0.0.1:5000/' + book.book_image_path;  // Adjust path to match backend route
+                            bookImage.src = SERVER + book.book_image_path;  // Adjust path to match backend route
                             bookImage.alt = `Image of ${book.bookName}`;
                             bookImage.style.maxWidth = '100px';
                             bookDiv.appendChild(bookImage);
                         }
-
-                        const deleteButton = document.createElement('button');
-                        deleteButton.innerText = 'DELETE';
-                        deleteButton.onclick = () => handleDelete(book.id);
-                        bookDiv.appendChild(deleteButton);
+                        // console.log(userRole)
+                        // Add delete button only for admin users
+                        if (userRole === 'Admin') {
+                            const deleteButton = document.createElement('button');
+                            deleteButton.innerText = 'DELETE';
+                            deleteButton.onclick = () => handleDelete(book.id);
+                            bookDiv.appendChild(deleteButton);
+                        }
 
                         const loanButton = document.createElement('button');
                         loanButton.innerText = 'LOAN';
@@ -91,6 +113,7 @@
         }
     </script>
 </head>
+
 <body>
     <h1>Book List</h1>
     <div id="book-container"></div>
@@ -98,4 +121,5 @@
     <a href="client_userPage.html">USER PAGE</a>
     <a href="addBook.html">ADD BOOK</a>
 </body>
+
 </html>

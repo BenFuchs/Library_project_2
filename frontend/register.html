@@ -30,9 +30,9 @@
                 Password: password
             })
             .then(function(response) {
+                window.location.href = 'bookPage.html'   
                 alert(response.data.msg || 'Registration successful!');
-                window.location.href= 'index.html'
-            })
+                            })
             .catch(function(error) {
                 if (error.response) {
                     alert(error.response.data.msg);

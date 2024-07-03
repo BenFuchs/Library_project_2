@@ -6,7 +6,7 @@
     <title>Show Users</title>
     <style>
         table {
-            width: 50%;
+            width: 80%;
             border-collapse: collapse;
             margin: 25px 0;
             font-size: 18px;
@@ -19,20 +19,27 @@
         th {
             background-color: #f2f2f2;
         }
+        img {
+            max-width: 100px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <h1>Users List</h1>
+    <h1>Users Loans</h1>
     <table id="usersTable">
         <thead>
             <tr>
-                <th>Email</th>
-                <th>Loans</th>
+                <th>#</th>
+                <th>Title</th>
+                <th>Image</th>
+                <th>Loan Date</th>
+                <th>Return Date</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Users will be appended here by JavaScript -->
+            <!-- Loans will be appended here by JavaScript -->
         </tbody>
     </table>
 
@@ -47,7 +54,7 @@
                 return;
             }
 
-            axios.get(SERVER + '/showUserLoans', {
+            axios.get(SERVER + 'showUserLoans', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -56,48 +63,75 @@
                 const data = response.data;
                 if (data && data.Loans) {
                     const tableBody = document.querySelector('#usersTable tbody');
-                    const row = document.createElement('tr');
-                    const emailCell = document.createElement('td');
-                    emailCell.textContent = data.Email;
-                    const loansCell = document.createElement('td');
-                    if (data.Loans.length > 0) {
-                        const loansList = document.createElement('ul');
-                        data.Loans.forEach(loan => {
-                            const loanItem = document.createElement('li');
-                            loanItem.textContent = `Title: ${loan.Title} `;
-                            const returnButton = document.createElement('button');
-                            returnButton.textContent = 'Return';
-                            returnButton.addEventListener('click', () => {
-                                axios.post(SERVER + `/returnBook/${loan.BookID}`, {}, {
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`
-                                    }
-                                })
-                                .then(returnResponse => {
-                                    const returnData = returnResponse.data;
-                                    console.log(returnData.msg);
-                                    if (returnData.msg === 'Book returned') {
-                                        loanItem.textContent += ' (returned)';
-                                        returnButton.disabled = true;
-                                    }
-                                })
-                                .catch(error => console.error('Error returning book:', error));
-                            });
-                            loanItem.appendChild(returnButton);
-                            loansList.appendChild(loanItem);
+                    tableBody.innerHTML = '';  // Clear existing rows
+                    data.Loans.forEach((loan, index) => {
+                        const row = document.createElement('tr');
+
+                        // Number
+                        const numberCell = document.createElement('td');
+                        numberCell.textContent = index + 1;
+
+                        // Title
+                        const titleCell = document.createElement('td');
+                        titleCell.textContent = loan.Title;
+
+                        // Image
+                        const imageCell = document.createElement('td');
+                        if (loan.ImagePath) {
+                            const image = document.createElement('img');
+                            image.src = SERVER + 'media/' + loan.ImagePath;
+                            image.alt = loan.Title;
+                            imageCell.appendChild(image);
+                        } else {
+                            imageCell.textContent = 'No image available';
+                        }
+
+                        // Loan Date
+                        const loanDateCell = document.createElement('td');
+                        loanDateCell.textContent = loan.LoanDate;
+
+                        // Return Date
+                        const returnDateCell = document.createElement('td');
+                        returnDateCell.textContent = loan.ReturnDate;
+
+                        // Action (Return Button)
+                        const actionCell = document.createElement('td');
+                        const returnButton = document.createElement('button');
+                        returnButton.textContent = 'Return';
+                        returnButton.addEventListener('click', () => {
+                            axios.post(SERVER + `returnBook/${loan.BookID}`, {}, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            })
+                            .then(returnResponse => {
+                                const returnData = returnResponse.data;
+                                console.log(returnData.msg);
+                                if (returnData.msg === 'Book returned') {
+                                    returnButton.disabled = true;
+                                    returnButton.textContent = 'Returned';
+                                }
+                            })
+                            .catch(error => console.error('Error returning book:', error));
                         });
-                        loansCell.appendChild(loansList);
-                    } else {
-                        loansCell.textContent = "No loans";
-                    }
-                    row.appendChild(emailCell);
-                    row.appendChild(loansCell);
-                    tableBody.appendChild(row);
+                        actionCell.appendChild(returnButton);
+
+                        // Append cells to row
+                        row.appendChild(numberCell);
+                        row.appendChild(titleCell);
+                        row.appendChild(imageCell);
+                        row.appendChild(loanDateCell);
+                        row.appendChild(returnDateCell);
+                        row.appendChild(actionCell);
+
+                        // Append row to table body
+                        tableBody.appendChild(row);
+                    });
                 } else {
                     console.error('Unexpected data format:', data);
                 }
             })
-            .catch(error => console.error('Error fetching users:', error));
+            .catch(error => console.error('Error fetching user loans:', error));
         });
     </script>
 </body>
