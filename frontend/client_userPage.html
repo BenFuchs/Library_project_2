@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +8,13 @@
     <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
+
 <body>
     <div class="navbar">
         <a href="bookPage.html">BOOK PAGE</a>
         <!-- Conditionally add "ADD BOOK" link for admin users -->
         <div id="admin-links"></div>
+        <button onclick="logout()">LOGOUT</button>
     </div>
     <div class="container">
         <h1>Users Loans</h1>
@@ -33,8 +36,8 @@
     </div>
     <script>
         const SERVER = 'http://127.0.0.1:5000/';
-        
-        document.addEventListener("DOMContentLoaded", function() {
+
+        document.addEventListener("DOMContentLoaded", function () {
             const token = localStorage.getItem('acc_token');
 
             if (!token) {
@@ -47,79 +50,79 @@
                     'Authorization': `Bearer ${token}`
                 }
             })
-            .then(response => {
-                const data = response.data;
-                if (data && data.Loans) {
-                    const tableBody = document.querySelector('#usersTable tbody');
-                    tableBody.innerHTML = '';  // Clear existing rows
-                    data.Loans.forEach((loan, index) => {
-                        const row = document.createElement('tr');
+                .then(response => {
+                    const data = response.data;
+                    if (data && data.Loans) {
+                        const tableBody = document.querySelector('#usersTable tbody');
+                        tableBody.innerHTML = '';  // Clear existing rows
+                        data.Loans.forEach((loan, index) => {
+                            const row = document.createElement('tr');
 
-                        // Number
-                        const numberCell = document.createElement('td');
-                        numberCell.textContent = index + 1;
+                            // Number
+                            const numberCell = document.createElement('td');
+                            numberCell.textContent = index + 1;
 
-                        // Title
-                        const titleCell = document.createElement('td');
-                        titleCell.textContent = loan.Title;
+                            // Title
+                            const titleCell = document.createElement('td');
+                            titleCell.textContent = loan.Title;
 
-                        // Image
-                        const imageCell = document.createElement('td');
-                        if (loan.ImagePath) {
-                            const image = document.createElement('img');
-                            image.src = SERVER + 'media/' + loan.ImagePath;
-                            image.alt = loan.Title;
-                            imageCell.appendChild(image);
-                        } else {
-                            imageCell.textContent = 'No image available';
-                        }
+                            // Image
+                            const imageCell = document.createElement('td');
+                            if (loan.ImagePath) {
+                                const image = document.createElement('img');
+                                image.src = SERVER + 'media/' + loan.ImagePath;
+                                image.alt = loan.Title;
+                                imageCell.appendChild(image);
+                            } else {
+                                imageCell.textContent = 'No image available';
+                            }
 
-                        // Loan Date
-                        const loanDateCell = document.createElement('td');
-                        loanDateCell.textContent = loan.LoanDate;
+                            // Loan Date
+                            const loanDateCell = document.createElement('td');
+                            loanDateCell.textContent = loan.LoanDate;
 
-                        // Return Date
-                        const returnDateCell = document.createElement('td');
-                        returnDateCell.textContent = loan.ReturnDate;
+                            // Return Date
+                            const returnDateCell = document.createElement('td');
+                            returnDateCell.textContent = loan.ReturnDate;
 
-                        // Action (Return Button)
-                        const actionCell = document.createElement('td');
-                        const returnButton = document.createElement('button');
-                        returnButton.textContent = 'Return';
-                        returnButton.addEventListener('click', () => {
-                            axios.post(SERVER + `returnBook/${loan.BookID}`, {}, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`
-                                }
-                            })
-                            .then(returnResponse => {
-                                const returnData = returnResponse.data;
-                                console.log(returnData.msg);
-                                if (returnData.msg === 'Book returned') {
-                                    returnButton.disabled = true;
-                                    returnButton.textContent = 'Returned';
-                                }
-                            })
-                            .catch(error => console.error('Error returning book:', error));
+                            // Action (Return Button)
+                            const actionCell = document.createElement('td');
+                            const returnButton = document.createElement('button');
+                            returnButton.textContent = 'Return';
+                            returnButton.addEventListener('click', () => {
+                                axios.post(SERVER + `returnBook/${loan.BookID}`, {}, {
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`
+                                    }
+                                })
+                                    .then(returnResponse => {
+                                        const returnData = returnResponse.data;
+                                        console.log(returnData.msg);
+                                        if (returnData.msg === 'Book returned') {
+                                            returnButton.disabled = true;
+                                            returnButton.textContent = 'Returned';
+                                        }
+                                    })
+                                    .catch(error => console.error('Error returning book:', error));
+                            });
+                            actionCell.appendChild(returnButton);
+
+                            // Append cells to row
+                            row.appendChild(numberCell);
+                            row.appendChild(titleCell);
+                            row.appendChild(imageCell);
+                            row.appendChild(loanDateCell);
+                            row.appendChild(returnDateCell);
+                            row.appendChild(actionCell);
+
+                            // Append row to table body
+                            tableBody.appendChild(row);
                         });
-                        actionCell.appendChild(returnButton);
-
-                        // Append cells to row
-                        row.appendChild(numberCell);
-                        row.appendChild(titleCell);
-                        row.appendChild(imageCell);
-                        row.appendChild(loanDateCell);
-                        row.appendChild(returnDateCell);
-                        row.appendChild(actionCell);
-
-                        // Append row to table body
-                        tableBody.appendChild(row);
-                    });
-                } else {
-                    console.error('Unexpected data format:', data);
-                }
-            })
-            .catch(error => console.error('Error fetching user loans:', error));
+                    } else {
+                        console.error('Unexpected data format:', data);
+                    }
+                })
+                .catch(error => console.error('Error fetching user loans:', error));
 
             // Get the user role from the token
             const tokenPayload = JSON.parse(atob(token.split('.')[1]));
@@ -133,6 +136,29 @@
                 document.querySelector('#admin-links').appendChild(addBookLink);
             }
         });
+
+        const logout = () => {
+            const token = localStorage.getItem('acc_token');
+
+            if (!token) {
+                console.error('JWT token is missing');
+                return;
+            }
+
+            axios.post(SERVER + 'logout', {}, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    console.log(response.data);
+                    localStorage.removeItem('acc_token'); // Clear the token from local storage
+                    window.location.href = 'index.html'; // Redirect to login page
+                })
+                .catch(error => console.error('Error logging out:', error));
+        }
+
     </script>
 </body>
+
 </html>

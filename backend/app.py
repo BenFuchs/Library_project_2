@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request, send_file, send_from_directory, url_f
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, joinedload,Mapped, mapped_column
 from sqlalchemy import Integer, String, select
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import JWTManager, get_jwt, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import os
@@ -54,6 +54,10 @@ class Loans(db.Model):
 
     user = db.relationship('Users', backref='loans')
     book = db.relationship('Books', backref='loans')
+
+class tokenBlacklist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String)
 
 # ADD ADMIN ROUTE, NO HTML REQUIRED ADDING ADMINS WILL BE DONE THRU THE BACKEND
 
@@ -121,9 +125,17 @@ def login():
         return jsonify({'acc_token': acc_token}), 200
     return send_from_directory('../frontend/index.html')
 
+@api.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]  # Get the JWT ID (JTI) from the token
+    blacklist_item = tokenBlacklist(token=jti)
+    db.session.add(blacklist_item)
+    db.session.commit()
+    return jsonify(msg="Successfully logged out"), 200  
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @api.route('/media/<path:filename>')  # Endpoint to serve media files
 def media(filename):
