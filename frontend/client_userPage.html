@@ -4,45 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Show Users</title>
-    <style>
-        table {
-            width: 80%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            font-size: 18px;
-            text-align: left;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        img {
-            max-width: 100px;
-        }
-    </style>
+    <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <h1>Users Loans</h1>
-    <table id="usersTable">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Title</th>
-                <th>Image</th>
-                <th>Loan Date</th>
-                <th>Return Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Loans will be appended here by JavaScript -->
-        </tbody>
-    </table>
-
+    <div class="navbar">
+        <a href="bookPage.html">BOOK PAGE</a>
+        <!-- Conditionally add "ADD BOOK" link for admin users -->
+        <div id="admin-links"></div>
+    </div>
+    <div class="container">
+        <h1>Users Loans</h1>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Image</th>
+                    <th>Loan Date</th>
+                    <th>Return Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Loans will be appended here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
     <script>
         const SERVER = 'http://127.0.0.1:5000/';
         
@@ -132,6 +120,18 @@
                 }
             })
             .catch(error => console.error('Error fetching user loans:', error));
+
+            // Get the user role from the token
+            const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+            const userRole = tokenPayload.sub.role;
+
+            // Conditionally add "ADD BOOK" link for admin users
+            if (userRole === 'Admin') {
+                const addBookLink = document.createElement('a');
+                addBookLink.href = 'addBook.html';
+                addBookLink.innerText = 'ADD BOOK';
+                document.querySelector('#admin-links').appendChild(addBookLink);
+            }
         });
     </script>
 </body>

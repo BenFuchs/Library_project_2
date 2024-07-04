@@ -26,4 +26,4 @@
 ## TODO
     1. fix image loading issues [X]
     2. add html for the rest of the endpoints
-    3. figure out how to split html for admin and users(Users shouldnt even see a delete or add button, while admins can etc)
+    3. figure out how to split html for admin and users(Users shouldnt even see a delete or add button, while admins can etc)[WIP]

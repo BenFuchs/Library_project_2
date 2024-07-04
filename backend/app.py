@@ -119,7 +119,7 @@ def login():
 
         acc_token = create_access_token(identity={'email': Email, 'role': user.Role})
         return jsonify({'acc_token': acc_token}), 200
-    return send_file('../frontend/index.html')
+    return send_from_directory('../frontend/index.html')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

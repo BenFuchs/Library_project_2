@@ -1,0 +1,91 @@
+/* media/style.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    flex-direction: column;
+}
+
+.container-login {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    flex-direction: column;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+.navbar {
+    background-color: #333;
+    overflow: hidden;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.navbar a {
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 20px;
+    display: inline-block;
+}
+
+.navbar a:hover {
+    background-color: #575757;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 18px;
+    text-align: left;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+img {
+    max-width: 100px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px; 
+    cursor: pointer;
+}
+
+button:disabled {
+    background-color: #ccc;
+}
+
+.delete-button {
+    margin-right: 5px;
+}
+
+.loan-button {
+    margin-left: 5px;
+}

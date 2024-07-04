@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         function handleLogin(event) {
@@ -22,28 +23,29 @@
                 // Store the access token and redirect to another page if needed
                 localStorage.setItem('acc_token', response.data.acc_token);
                 // window.location.href = 'another_page.html'; // Uncomment to redirect
-                 window.location.href = 'bookPage.html'
-            
+                window.location.href = 'bookPage.html';
             })
             .catch(error => {
                 console.error('Error logging in:', error);
-                alert('Login failed: ' + error.response.data.message);
+                alert('Login failed: ' + error.response.data.msg);
             });
         }
     </script>
 </head>
 <body>
-    <h1>Login</h1>
-    <form id="login-form" onsubmit="handleLogin(event)">
-        <label for="email">Email:</label>
-        <input type="text" id="email" name="email" required>
+    <div class="container">
+        <h1>Login</h1>
+        <form id="login-form" onsubmit="handleLogin(event)" class="container-login">
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" required>
+            <br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <br>
+            <button type="submit">Login</button>
+        </form>
         <br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br>
-        <button type="submit">Login</button>
-    </form>
-    <br>
-    <a href="../frontend/register.html">Dont have an account? Sign up here!</a>
+        <a href="../frontend/register.html">Don't have an account? Sign up here!</a>
+    </div>
 </body>
 </html>

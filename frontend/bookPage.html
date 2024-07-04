@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book List</title>
+    <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         const SERVER = 'http://127.0.0.1:5000/';
@@ -33,6 +33,14 @@
                     const userRole = tokenPayload.sub.role;
                     console.log('User Role:', userRole);
 
+                   // Conditionally add "ADD BOOK" link for admin users
+                   if (userRole === 'Admin') {
+                        const addBookLink = document.createElement('a');
+                        addBookLink.href = 'addBook.html';
+                        addBookLink.innerText = 'ADD BOOK';
+                        document.querySelector('.navbar').appendChild(addBookLink);
+                    }
+
                     response.data.forEach(book => {
                         const bookDiv = document.createElement('div');
                         bookDiv.className = 'book-item';
@@ -49,16 +57,18 @@
                             bookImage.style.maxWidth = '100px';
                             bookDiv.appendChild(bookImage);
                         }
-                        // console.log(userRole)
+
                         // Add delete button only for admin users
                         if (userRole === 'Admin') {
                             const deleteButton = document.createElement('button');
+                            deleteButton.className = 'delete-button';
                             deleteButton.innerText = 'DELETE';
                             deleteButton.onclick = () => handleDelete(book.id);
                             bookDiv.appendChild(deleteButton);
                         }
 
                         const loanButton = document.createElement('button');
+                        loanButton.className = 'loan-button';
                         loanButton.innerText = 'LOAN';
                         loanButton.onclick = () => handleLoan(book.id);
                         bookDiv.appendChild(loanButton);
@@ -113,13 +123,13 @@
         }
     </script>
 </head>
-
 <body>
-    <h1>Book List</h1>
-    <div id="book-container"></div>
-    <br>
-    <a href="client_userPage.html">USER PAGE</a>
-    <a href="addBook.html">ADD BOOK</a>
+    <div class="navbar">
+        <a href="client_userPage.html">USER PAGE</a>
+    </div>
+    <div class="container">
+        <h1>Book List</h1>
+        <div id="book-container"></div>
+    </div>
 </body>
-
 </html>
