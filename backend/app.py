@@ -235,7 +235,8 @@ def show_users():
             "Email": user.Email,
             "Loans": [{
                 "LoanID": loan.id,
-                "BookName": loan.book.bookName
+                "BookName": loan.book.bookName,
+                "returnDate":  loan.returnDate
             } for loan in user.loans if loan.Active]
         } for user in user_list]
         return jsonify(users)

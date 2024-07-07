@@ -1,4 +1,4 @@
-/* media/style.css */
+/* media/styles.css */
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -74,7 +74,7 @@ button {
     color: white;
     padding: 10px 15px;
     border: none;
-    border-radius: 5px; 
+    border-radius: 5px;
     cursor: pointer;
 }
 
@@ -93,4 +93,16 @@ button:disabled {
 .logout-button {
     justify-items: flex-end;
     margin-left: 1250px;
+}
+
+/* Additional classes */
+.book-item {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.search-bar {
+    margin-bottom: 20px;
 }

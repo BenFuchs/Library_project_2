@@ -212,9 +212,25 @@
                 .then(response => {
                     console.log('Book loaned:', response.data);
                     // Optionally, update the book status in the DOM
-                    window.location.reload();
+                    window.location.reload()
                 })
                 .catch(error => console.error('Error loaning book:', error));
+        }
+
+
+         // Search function
+         function searchBooks() {
+            const input = document.getElementById('searchInput').value.toUpperCase();
+            const bookItems = document.getElementsByClassName('book-item');
+
+            Array.from(bookItems).forEach(item => {
+                const text = item.textContent.toUpperCase();
+                if (text.indexOf(input) > -1) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
         }
     </script>
 </head>
@@ -225,6 +241,7 @@
     </div>
     <div class="container">
         <h1>Book List</h1>
+        <input type="text" id="searchInput" placeholder="Search for books..." onkeyup="searchBooks()">
         <div id="book-container"></div>
     </div>
 </body>
