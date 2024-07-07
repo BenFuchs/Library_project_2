@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
+    <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <h2>Register</h2>
-    <form id="registerForm">
+    <h2 class="container">Register</h2>
+    <form id="registerForm" class="container">
         <label for="email">Email:</label>
         <input type="text" id="email" name="email" required>
         <br>
@@ -21,18 +22,18 @@
         document.getElementById('registerForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
-            const SERVER ='http://127.0.0.1:5000'
+            const SERVER = 'http://127.0.0.1:5000';
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            axios.post(SERVER + '/register', {
+            axios.post(`${SERVER}/register`, {
                 Email: email,
                 Password: password
             })
             .then(function(response) {
-                window.location.href = 'bookPage.html'   
+                window.location.href = 'index.html';
                 alert(response.data.msg || 'Registration successful!');
-                            })
+            })
             .catch(function(error) {
                 if (error.response) {
                     alert(error.response.data.msg);

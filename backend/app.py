@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file, send_from_directory, url_for
+from flask import Flask, abort, jsonify, request, send_file, send_from_directory, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, joinedload,Mapped, mapped_column
 from sqlalchemy import Integer, String, select
@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime as dt, timedelta as td
 
 api = Flask(__name__, static_folder='media')
-CORS(api)
+CORS(api, resources={r"/*": {"origins": "*"}})  # Allow all origins for testing
 api.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///library.db"
 api.config['SECRET_KEY'] = 'your_secret_key_here'
 api.config['JWT_SECRET_KEY'] = 'jwt_secret_key_here'
@@ -98,6 +98,7 @@ def register():
     db.session.commit()
 
     return jsonify({"msg": "User registered successfully"}), 201
+
 # LOGIN, HTML ADDED
 @api.route('/', methods=['POST', 'GET'])
 def login():
@@ -123,7 +124,7 @@ def login():
 
         acc_token = create_access_token(identity={'email': Email, 'role': user.Role})
         return jsonify({'acc_token': acc_token}), 200
-    return send_from_directory('../frontend/index.html')
+    return send_from_directory('../frontend','index.html')
 
 @api.route('/logout', methods=['POST'])
 @jwt_required()
@@ -132,10 +133,23 @@ def logout():
     blacklist_item = tokenBlacklist(token=jti)
     db.session.add(blacklist_item)
     db.session.commit()
-    return jsonify(msg="Successfully logged out"), 200  
+    return send_from_directory('../frontend','index.html'), 200  
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@api.route('/<path:filename>')
+def serve_html(filename):
+    if filename.endswith('.html'):
+        return send_from_directory('../frontend', filename)
+    else:
+        abort(404)  # Handle non-HTML requests as needed
+
+
+# @api.route('/bookPage.html')
+# def serve_book_page():
+#     return send_from_directory('../frontend', 'bookPage.html')
+
 
 @api.route('/media/<path:filename>')  # Endpoint to serve media files
 def media(filename):
@@ -212,14 +226,17 @@ def show_book():
 @api.route('/showUser', methods=['GET'])
 @jwt_required()
 def show_users():
-    logged_user = get_jwt_identity()
+    logged_user = get_jwt_identity()    
     user_role = logged_user['role']
     admin = Users.query.filter_by(Role='Admin').first()
     if user_role == admin.Role:
-        user_list = db.session.query(Users).options(joinedload(Users.loans)).all()
+        user_list = db.session.query(Users).filter_by(Active=True).options(joinedload(Users.loans).joinedload(Loans.book)).all()
         users = [{
             "Email": user.Email,
-            "Loans": [{"LoanID": loan.id} for loan in user.loans]
+            "Loans": [{
+                "LoanID": loan.id,
+                "BookName": loan.book.bookName
+            } for loan in user.loans]
         } for user in user_list]
         return jsonify(users)
     else:
@@ -291,20 +308,28 @@ def update_book(book_id):
     if user_role == admin.Role:
         book = db.session.execute(db.select(Books).filter_by(id=book_id)).scalars().first()
         if book:
-            data = request.get_json()
-            new_bookName = data['bookName']
-            new_bookAuthor = data['bookAuthor']
-            new_bookPublished = data['bookPublished']
-            
+            new_bookName = request.form['bookName']
+            new_bookAuthor = request.form['bookAuthor']
+            new_bookPublished = request.form['bookPublished']
+            new_img = request.files.get('image')
+
+            # Save the new image
+            if new_img:
+                filename = secure_filename(new_img.filename)
+                image_path = os.path.join(UPLOAD_FOLDER, filename)
+                new_img.save(image_path)
+                book.book_image_path = filename
+
             book.bookName = new_bookName
             book.bookAuthor = new_bookAuthor
             book.bookPublished = new_bookPublished
             db.session.commit()
             return jsonify({"msg": "Book updated successfully"}), 200
-            
         else:
-            return jsonify({"msg": "Unauthorized"}), 403
-        
+            return jsonify({"msg": "Book not found"}), 404
+    else:
+        return jsonify({"msg": "Unauthorized"}), 403
+    
 @api.route('/returnBook/<int:book_id>', methods=['POST'])
 @jwt_required()
 def return_book(book_id):
@@ -342,34 +367,36 @@ def return_book(book_id):
 
 
 
-@api.route('/deleteUser/<int:user_id>', methods=['POST'])
+@api.route('/deleteUser/<email>', methods=['DELETE', 'OPTIONS'])
 @jwt_required()
-def del_user(user_id):
-    logged_user= get_jwt_identity()
-    # print(logged_user)
-    user_role=logged_user['role']
-    print(user_role)
+def del_user(email):
+    if request.method == 'OPTIONS':
+        return '', 200  # Return OK for preflight request
+    print(email)
+    logged_user = get_jwt_identity()
+    user_role = logged_user['role']
+    
     admin = Users.query.filter_by(Role='Admin').first()
-    print(admin.Role)
     if user_role == admin.Role:
-        user = Users.query.filter_by(id=user_id).first()
-        print(user)
+        user = Users.query.filter_by(Email=email).first()
         if user:
-            print(user_id)
             user.Active = 0
             db.session.commit()
+            return jsonify({"message": "User set to inactive"}), 200
+        else:
+            return jsonify({"message": "User not found"}), 404
     else:
-        return "NOPE"
-    return "user set to inactive"
+        return jsonify({"message": "Unauthorized"}), 401
 
-@api.route('/updateUser/<int:user_id>', methods=['POST'])
+
+@api.route('/updateUser/<email>', methods=['POST'])
 @jwt_required()
-def upd_user(user_id):
+def upd_user(email):
     logged_user = get_jwt_identity()
     user_email= logged_user['email']
     user = Users.query.filter_by(Email=user_email).first()
 
-    if user and user.id == user_id:
+    if user and user_email == email:
         data = request.get_json()
         new_email = data.get("Email")
         new_password = data.get("Password")

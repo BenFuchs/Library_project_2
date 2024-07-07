@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,24 @@
     <link rel="stylesheet" href="http://127.0.0.1:5000/media/style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        const fetchBooks = () => {
+            const token = localStorage.getItem('acc_token');
+            axios.get('http://127.0.0.1:5000/showBook', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    console.log('Books fetched:', response.data);
+                    localStorage.setItem('books', JSON.stringify(response.data)); // Store books data
+                    window.location.href = 'bookPage.html';
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    alert('Failed to fetch books data');
+                });
+        }
+
         function handleLogin(event) {
             event.preventDefault(); // Prevent form from submitting the default way
 
@@ -17,21 +36,21 @@
                 Email: email,
                 Password: password
             })
-            .then(response => {
-                console.log('Login successful:', response.data);
-                alert('Login successful');
-                // Store the access token and redirect to another page if needed
-                localStorage.setItem('acc_token', response.data.acc_token);
-                // window.location.href = 'another_page.html'; // Uncomment to redirect
-                window.location.href = 'bookPage.html';
-            })
-            .catch(error => {
-                console.error('Error logging in:', error);
-                alert('Login failed: ' + error.response.data.msg);
-            });
+                .then(response => {
+                    console.log('Login successful:', response.data);
+                    localStorage.setItem('acc_token', response.data.acc_token);
+                    fetchBooks(); // Call a function to fetch books data
+                })
+                .catch(error => {
+                    console.error('Error logging in:', error);
+                    alert('Login failed: ' + error.response.data.msg);
+                });
+
         }
+
     </script>
 </head>
+
 <body>
     <div class="container">
         <h1>Login</h1>
@@ -45,7 +64,8 @@
             <button type="submit">Login</button>
         </form>
         <br>
-        <a href="../frontend/register.html">Don't have an account? Sign up here!</a>
+        <a href="register.html">Don't have an account? Sign up here!</a>
     </div>
 </body>
+
 </html>

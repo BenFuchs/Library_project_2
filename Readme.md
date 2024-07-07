@@ -25,6 +25,6 @@
 
 ## TODO
     1. fix image loading issues [X]
-    2. add html for the rest of the endpoints[]-> page for updating user data(like an edit profile page), page for deleting users, page for showing all users to the admin, page for updating books
+    2. add html for the rest of the endpoints[]-> page for updating user data(like an edit profile page)[X], page for deleting users[X], page for showing all users to the admin[X], page for updating books[X]
     3. figure out how to split html for admin and users(Users shouldnt even see a delete or add button, while admins can etc)[WIP]
-    4. add logout endpoint []
+    4. add logout endpoint [x]

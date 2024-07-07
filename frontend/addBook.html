@@ -75,12 +75,13 @@
             const userRole = tokenPayload.sub.role;
 
             // Conditionally add "ADD BOOK" link for admin users
-            // if (userRole === 'Admin') {
-            //     const addBookLink = document.createElement('a');
-            //     addBookLink.href = 'addBook.html';
-            //     addBookLink.innerText = 'ADD BOOK';
-            //     document.querySelector('#admin-links').appendChild(addBookLink);
-            // }
+            if (userRole === 'Admin') {
+                const userListLink = document.createElement('a');
+                userListLink.href = 'userPage.html';
+                userListLink.innerText ='USERS LIST'
+                document.querySelector('#admin-links').appendChild(userListLink)
+                
+            }
         });
     </script>
 </body>

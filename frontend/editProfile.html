@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update User Info</title>
+    <link rel="stylesheet" href="media/style.css"> <!-- Link to your style.css file -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Update User Information</h1>
+        <form id="updateUserForm" class="container-login">
+            <label for="email">New Email:</label>
+            <input type="email" id="email" name="email"><br><br>
+            <label for="password">New Password:</label>
+            <input type="password" id="password" name="password"><br><br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <script>
+        const SERVER = 'http://127.0.0.1:5000/';
+
+        const token = localStorage.getItem('acc_token');
+        if (!token) {
+            console.error('No JWT token found');
+            alert('You must be logged in to update your information');
+        } else {
+            try {
+                const decodedToken = jwt_decode(token);
+                const email = decodedToken.sub.email; // Access email under 'sub'
+
+                document.getElementById('email').value = email; // Pre-fill email input if needed
+
+                document.getElementById('updateUserForm').onsubmit = function(event) {
+                    event.preventDefault();
+
+                    const newEmail = document.getElementById('email').value;
+                    const newPassword = document.getElementById('password').value;
+
+                    axios.post(`${SERVER}updateUser/${email}`, { // Assuming email is the user identifier in your backend
+                        Email: newEmail,
+                        Password: newPassword
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }).then(response => {
+                        console.log(response.data);
+                        alert('User info has been updated successfully');
+                    }).catch(error => {
+                        console.error('Error updating user info:', error);
+                        alert('Failed to update user info');
+                    });
+                }
+            } catch (error) {
+                console.error('Error decoding JWT token:', error);
+                alert('Error decoding JWT token');
+            }
+        }
+    </script>
+</body>
+</html>

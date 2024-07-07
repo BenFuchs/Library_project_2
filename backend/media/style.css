@@ -89,3 +89,8 @@ button:disabled {
 .loan-button {
     margin-left: 5px;
 }
+
+.logout-button {
+    justify-items: flex-end;
+    margin-left: 1250px;
+}
