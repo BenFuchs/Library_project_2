@@ -1,6 +1,8 @@
 # LIBRARY PROJECT
     Functional library like website
-    ...
+    HOW TO USE:
+    1. if database does not exist yet, run the program using py app.py (make sure youre in the correct directory!), and manually add an admin user using the registerAdmin endpoint (use thunder or similar client)
+    2. Now that you have an active admin user, you can add books, users, and make any changes to the library within the admins capabilities.
 
 ## HTML PAGES 
     1. Login page
@@ -24,7 +26,4 @@
     12. return book [X]
 
 ## TODO
-    1. fix image loading issues [X]
-    2. add html for the rest of the endpoints[]-> page for updating user data(like an edit profile page)[X], page for deleting users[X], page for showing all users to the admin[X], page for updating books[X]
-    3. figure out how to split html for admin and users(Users shouldnt even see a delete or add button, while admins can etc)[WIP]
-    4. add logout endpoint [x]
+   
