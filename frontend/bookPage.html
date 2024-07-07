@@ -212,6 +212,7 @@
                 .then(response => {
                     console.log('Book loaned:', response.data);
                     // Optionally, update the book status in the DOM
+                    window.location.reload();
                 })
                 .catch(error => console.error('Error loaning book:', error));
         }

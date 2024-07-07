@@ -230,13 +230,13 @@ def show_users():
     user_role = logged_user['role']
     admin = Users.query.filter_by(Role='Admin').first()
     if user_role == admin.Role:
-        user_list = db.session.query(Users).filter_by(Active=True).options(joinedload(Users.loans).joinedload(Loans.book)).all()
+        user_list = db.session.query(Users).filter_by(Active=True).options(joinedload(Users.loans).joinedload(Loans.book)).all()      
         users = [{
             "Email": user.Email,
             "Loans": [{
                 "LoanID": loan.id,
                 "BookName": loan.book.bookName
-            } for loan in user.loans]
+            } for loan in user.loans if loan.Active]
         } for user in user_list]
         return jsonify(users)
     else:
